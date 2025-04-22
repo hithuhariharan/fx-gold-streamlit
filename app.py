@@ -37,15 +37,21 @@ def fred(series_id: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=3600, show_spinner="Fetching macro data ⏳")
 def get_snapshot():
-    snap = {k: fred(k).iloc[-1] for k in SERIES}
+    # Use human‑readable labels as keys
+    snap = {SERIES[k]: fred(k).iloc[-1] for k in SERIES}
+
     # YoY inflation
     cpi = fred("CPIAUCSL")
     yoy = ((cpi.iloc[-1] / cpi.iloc[-13]) - 1) * 100 if len(cpi) > 12 else math.nan
     snap["CPI_YoY%"] = round(yoy, 2)
-    # Fed last change
+
+    # Fed funds change vs ~1 month ago
     ff = fred("DFF").dropna()
-    snap["FedChange_bps"] = round((ff.iloc[-1] - ff.iloc[-22]) * 100, 1) if len(ff) > 21 else math.nan
+    Δ = (ff.iloc[-1] - ff.iloc[-22]) * 100 if len(ff) > 21 else math.nan
+    snap["FedChange_bps"] = round(Δ, 1)
+
     return snap
+
 
 data = get_snapshot()
 
